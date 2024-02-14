@@ -3,21 +3,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 class InteractivePlot:
-    def __init__(self, ax1, N, xmin, x_vals, y_vals, epsilon):
+    def __init__(self, ax1, x_vals, y_vals, epsilon):
         self.ax1 = ax1
-        self.N=N # number of points
-        self.xmin = xmin
-        self.xmax = xmax 
         self.x_vals = x_vals  # starting x values
         self.y_vals = y_vals  # starting y values
         self.p_idx = None #active point
         self.epsilon = epsilon #max pixel distance
-
-    def update(self):
-        'update plots'
-        self.ax1.clear()
-        self.ax1.scatter (self.x_vals,self.y_vals,color='k',marker='o')
-        self.ax1.grid(True)
 
     def button_press_callback(self, event):
         'whenever a mouse button is pressed'
@@ -26,7 +17,7 @@ class InteractivePlot:
         if event.button != 1:
             return
 
-        self.p_idx = self.get_ind_under_point(event)  
+        self.p_idx = self.get_cursor_idx(event)  
 
     def button_release_callback(self,event):
         'whenever a mouse button is released'
@@ -35,12 +26,12 @@ class InteractivePlot:
             return
         self.p_idx = None
 
-    def get_ind_under_point(self, event):
+    def get_cursor_idx(self, event):
         'get the index of the vertex under point if within epsilon tolerance'
 
-        t = self.ax1.transData.inverted()
+        #t = self.ax1.transData.inverted()
         tinv = ax1.transData 
-        xy = t.transform([event.x,event.y])
+        #xy = t.transform([event.x,event.y])
         xr = np.reshape(self.x_vals,(np.shape(self.x_vals)[0],1))
         yr = np.reshape(self.y_vals,(np.shape(self.y_vals)[0],1))
         xy_vals = np.append(xr,yr,1)
@@ -55,7 +46,7 @@ class InteractivePlot:
         
         return ind
     
-    def motion_notify_callback(self, event):
+    def motion_detect_callback(self, event):
         'on mouse movement'
 
         if self.p_idx is None:
@@ -70,8 +61,14 @@ class InteractivePlot:
         self.y_vals[self.p_idx] = event.ydata 
         
         #update plot
-        self.update()
+        self.update_plots()
         fig.canvas.draw_idle()
+
+    def update_plots(self):
+        'update plots'
+        self.ax1.clear()
+        self.ax1.scatter (self.x_vals,self.y_vals,color='k',marker='o')
+        self.ax1.grid(True)
 
 ##################################################################################
 ##################################################################################
@@ -87,7 +84,7 @@ epsilon = 5 #max pixel distance
 
 fig,ax1 = plt.subplots(1,1,figsize=(9.0,8.0))
 
-test = InteractivePlot(ax1, N, xmin, x_vals, y_vals, epsilon)
+test = InteractivePlot(ax1, x_vals, y_vals, epsilon)
 
 ax1.scatter (x_vals,y_vals,color='k',marker='o')
 
@@ -103,6 +100,6 @@ ax1.legend(loc=2,prop={'size':22})
 # Find Event Functions
 fig.canvas.mpl_connect('button_press_event', test.button_press_callback)
 fig.canvas.mpl_connect('button_release_event', test.button_release_callback)
-fig.canvas.mpl_connect('motion_notify_event', test.motion_notify_callback)
+fig.canvas.mpl_connect('motion_notify_event', test.motion_detect_callback)
 
 plt.show()
