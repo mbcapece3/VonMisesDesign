@@ -35,6 +35,8 @@ class VonMises:
 
 
     def compute_vonmises_coeff(self, coeff_num):
+            # Compute an Arbitrary Von Mises Transform Coefficient
+
             num_terms = coeff_num + 1
             k = len(self.singularities)
             sum = 0
@@ -82,34 +84,26 @@ class VonMises:
     def conformalMap(self, v_inf, alpha_rad):
         self.v_inf = v_inf
         self.alpha_rad = alpha_rad
+
+        # Map Airfoil Geometry
         self.circle_df["mapped_pts"] = self.circle_df.circle_pts + self.C1/self.circle_df.circle_pts + self.C2/(self.circle_df.circle_pts**2) + self.C3/(self.circle_df.circle_pts**3)
 
+        # Scale Airfoil Geometry to X/C
         self.airfoil_TE = self.circle_TE + self.C1/self.circle_TE + self.C2/self.circle_TE**2 + self.C3/self.circle_TE**3
         self.airfoil_LE = self.circle_LE + self.C1/self.circle_LE + self.C2/self.circle_LE**2 + self.C3/self.circle_LE**3
         self.chord = abs(self.airfoil_TE - self.airfoil_LE)
         self.circle_df["airfoil_pts"] = (np.real(self.circle_df.mapped_pts) - np.real(self.airfoil_LE)) / self.chord + (np.imag(self.circle_df.mapped_pts) / self.chord)*1j
         
+        # Map Airfoil Surface Velocities 
         self.circle_df["circle_vels"] = 2*v_inf*(np.sin(alpha_rad + self.beta) - np.sin(alpha_rad - self.circle_df.angles))
         self.circle_df["map_func_derivatives"] = 1 - self.C1/(self.circle_df.circle_pts**2) - 2*self.C2/(self.circle_df.circle_pts**3) - 3*self.C3/(self.circle_df.circle_pts**4)  # first derivative of airfoil pts wrt circle pts
         self.circle_df["airfoil_vels"] = abs(self.circle_df.circle_vels) / abs(self.circle_df.map_func_derivatives)
 
+        # Manually Set TE_Vel with L'hopitals rule because indeterminate
         TE_map_func_second_deriv = 2*self.C1/(self.circle_TE**3) + 6*self.C2/(self.circle_TE**4) + 12*self.C3/(self.circle_TE**5)  # second derivative of airfoil pts wrt circle pts evaluated at trailing edge
-        #TE_vel = abs(v_inf*(2*abs(np.cos(alpha_rad+self.beta))*np.cos(self.beta)) / ((1+np.real(self.center)) * TE_map_func_second_deriv))  # velocity at trailing edge
         TE_vel = abs(2*v_inf*np.cos(alpha_rad+self.beta)/self.radius) / abs(TE_map_func_second_deriv)  # velocity at trailing edge
-
         self.circle_df.at[0, 'airfoil_vels'] = TE_vel
         self.circle_df.at[self.num_pts-1, 'airfoil_vels'] = TE_vel
-        
-        #This TE_vel formula gives the correct answer but I thought it was wrong previously. Do the math to confirm
-        ############################################################################
-        ############################################################################
-        ############################################################################
-        ############################################################################
-        ############################################################################
-        ############################################################################
-        ############################################################################
-        ############################################################################
-        ############################################################################
 
 
     def plotMapping(self):
@@ -139,6 +133,8 @@ class VonMises:
         ax3.grid()
         ax3.vlines(0,-2,2,color='black')
         ax3.hlines(0,-2,2,color='black')
+
+
 
         
 singularities = [1+0j, -1+0j, 0, 0]
