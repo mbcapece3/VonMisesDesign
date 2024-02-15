@@ -1,18 +1,18 @@
+from InteractivePlot import VMPlot
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import numpy as np
-from matplotlib.widgets import Slider, Button, RadioButtons
 import pandas as pd
 import itertools
 from timeit import default_timer as timer
 
 class VonMises:
-    
-            
-    def __init__(self,center,singularities=[1+0j, -1+0j, 0, 0],num_pts=200):
+     
+    def __init__(self, center, v_inf, alpha_rad, singularities=[1+0j, -1+0j, 0, 0], num_pts=200):
         self.circle_TE = 1 + 0j  # fix trailing edge at (1,0)
         self.center = center # complex number
         self.singularities = singularities # list of singularities as complex points
+        self.v_inf = v_inf
+        self.alpha_rad = alpha_rad
         self.radius = abs(self.circle_TE - self.center)
         self.beta = np.arcsin(np.imag(self.center)/self.radius)
         self.num_pts = num_pts  # number of discreet points in circle
@@ -33,7 +33,6 @@ class VonMises:
         #end= timer()
         #print(end-start)
 
-
     def compute_vonmises_coeff(self, coeff_num):
             # Compute an Arbitrary Von Mises Transform Coefficient
 
@@ -52,28 +51,16 @@ class VonMises:
             else:
                 return 1 / coeff_num * sum 
 
-    def setCenter(self,new_center):
-        self.center = new_center # complex number
+    def updateCircle(self):
         self.radius = abs(self.circle_TE - self.center)
         self.beta = np.arcsin(np.imag(self.center)/self.radius)
 
         self.circle_df["circle_pts"] = self.radius * np.exp(self.circle_df.angles*1j)+self.center
 
-
-    def setSingularities(self, newSingularities):
-        self.singularities = newSingularities # list of singularities as complex points
-
-        self.C1 = VonMises.compute_vonmises_coeff(test.singularities,1)
-        self.C2 = VonMises.compute_vonmises_coeff(test.singularities,2)
-        self.C3 = VonMises.compute_vonmises_coeff(test.singularities,3)
-
-        # s1 = self.singularities[0]
-        # s2 = self.singularities[1]
-        # s3 = self.singularities[2]
-        # s4 = self.singularities[3]
-        # self.C1 = s1**2 - s2*(s3+s4) - s3*s4
-        # self.C2 = 1/2*(s1*(s2*(s3+s4) + s3*s4) + s2*s3*s4)
-        # self.C3 = -1/3*(s1*s2*s3*s4)
+    def updateCoefficients(self):
+        self.C1 = self.compute_vonmises_coeff(1)
+        self.C2 = self.compute_vonmises_coeff(2)
+        self.C3 = self.compute_vonmises_coeff(3)
 
     def setV_inf(self, v_inf):
         self.v_inf = v_inf
@@ -81,9 +68,7 @@ class VonMises:
     def setAlpha_rad(self, alpha_rad):
         self.alpha_rad = alpha_rad
 
-    def conformalMap(self, v_inf, alpha_rad):
-        self.v_inf = v_inf
-        self.alpha_rad = alpha_rad
+    def conformalMap(self):
 
         # Map Airfoil Geometry
         self.circle_df["mapped_pts"] = self.circle_df.circle_pts + self.C1/self.circle_df.circle_pts + self.C2/(self.circle_df.circle_pts**2) + self.C3/(self.circle_df.circle_pts**3)
@@ -104,7 +89,6 @@ class VonMises:
         TE_vel = abs(2*v_inf*np.cos(alpha_rad+self.beta)/self.radius) / abs(TE_map_func_second_deriv)  # velocity at trailing edge
         self.circle_df.at[0, 'airfoil_vels'] = TE_vel
         self.circle_df.at[self.num_pts-1, 'airfoil_vels'] = TE_vel
-
 
     def plotMapping(self):
         fig, (ax1,ax2,ax3) = plt.subplots(1,3, figsize=(15,5), gridspec_kw={'height_ratios': [1]})
@@ -137,20 +121,67 @@ class VonMises:
 
 
         
-singularities = [1+0j, -1+0j, 0, 0]
-singularities2 = [1+0j, -1+0j, .37-.471j, -.37+.471j]
+#singularities = [1+0j, -1+0j, 0, 0]
+singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
+v_inf = 1
+alpha_rad = 0
  
-test = VonMises(-.072+.29j,singularities2)
-test.conformalMap(1,0)
-#print(test.circle_df)
-test.plotMapping()
-#test.setCenter(-.15+.5j)
-#test.plotCircle()
-#test.setSingularities(singularities2)
-#test.conformalMap(1,0)
-#test.plotCircle()
+vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
+vm1.conformalMap()
+
+#vm1.plotMapping() # still image
+
+epsilon = 5 #max pixel distance
+
+fig1,(ax1,ax2,ax3) = plt.subplots(1,3,figsize=(15,5))
+
+vmPlot = VMPlot(vm1, fig1, ax1, ax2, ax3, epsilon)
+
+ax1.scatter (np.real(vm1.center), np.imag(vm1.center),color='r',marker='o')
+ax1.scatter (np.real(vm1.singularities),np.imag(vm1.singularities),color='k',marker='o')
+ax1.plot(np.real(vm1.circle_df.circle_pts), np.imag(vm1.circle_df.circle_pts))
+
+ax1.set_aspect('equal')
+ax1.set_xlim(-2,2)
+ax1.set_ylim(-2,2)
+ax1.grid()
+ax1.vlines(0,-2,2,color='black')
+ax1.hlines(0,-2,2,color='black')
+
+ax2.plot(np.real(vm1.circle_df.airfoil_pts), np.imag(vm1.circle_df.airfoil_pts))
+ax2.set_aspect('equal')
+ax2.set_xlim(-.1,1.1)
+ax2.set_ylim(-.6,.6)
+ax2.grid()
+ax2.vlines(0,-2,2,color='black')
+ax2.hlines(0,-2,2,color='black')
+
+ax3.plot(np.real(vm1.circle_df.airfoil_pts), vm1.circle_df.airfoil_vels/vm1.v_inf)
+ax3.set_aspect(.5)
+ax3.set_xlim(0,1.1)
+ax3.set_ylim(0,2.2)
+ax3.grid()
+ax3.vlines(0,-2,2,color='black')
+ax3.hlines(0,-2,2,color='black')
+
+# Bind Event Functions
+fig1.canvas.mpl_connect('button_press_event', vmPlot.button_press_callback)
+fig1.canvas.mpl_connect('button_release_event', vmPlot.button_release_callback)
+fig1.canvas.mpl_connect('motion_notify_event', vmPlot.motion_detect_callback)
 
 plt.show()
 
+### Outstanding Items ###
+# Add Plot Labels
+# Check results against examples
+# Put high level code in a main file and pull in both classes
+# Points need to always sum to 0. Least squares
+# Make X and Y Limits Scale Automatically
+# Start with joukowski and have ability to Add/Remove points
+# Add Import/Export Options when you run the program
+# Display exact singularity/center values. Maybe have sliders/manual entry box
+# Compute lift from circulation
+# Can I have an option to compute drag with boundary layer equations?
+# Can I Run this in a Jupyter Kernel online?
 
 

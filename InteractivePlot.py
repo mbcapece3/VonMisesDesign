@@ -2,11 +2,13 @@ from matplotlib.widgets import Slider, Button
 from matplotlib import pyplot as plt
 import numpy as np
 
-class InteractivePlot:
-    def __init__(self, ax1, x_vals, y_vals, epsilon):
+class VMPlot:
+    def __init__(self, data_obj, fig, ax1, ax2, ax3, epsilon):
+        self.data_obj = data_obj # VonMises style object
+        self.fig = fig
         self.ax1 = ax1
-        self.x_vals = x_vals  # starting x values
-        self.y_vals = y_vals  # starting y values
+        self.ax2 = ax2
+        self.ax3 = ax3
         self.p_idx = None #active point
         self.epsilon = epsilon #max pixel distance
 
@@ -29,77 +31,85 @@ class InteractivePlot:
     def get_cursor_idx(self, event):
         'get the index of the vertex under point if within epsilon tolerance'
 
-        #t = self.ax1.transData.inverted()
-        tinv = ax1.transData 
-        #xy = t.transform([event.x,event.y])
-        xr = np.reshape(self.x_vals,(np.shape(self.x_vals)[0],1))
-        yr = np.reshape(self.y_vals,(np.shape(self.y_vals)[0],1))
-        xy_vals = np.append(xr,yr,1)
-        xyt = tinv.transform(xy_vals)
-        xt, yt = xyt[:, 0], xyt[:, 1]
-        d = np.hypot(xt - event.x, yt - event.y)
-        indseq, = np.nonzero(d == d.min())
-        ind = indseq[0]
+        x_vals = np.concatenate((np.array(np.real(self.data_obj.center)), np.real(self.data_obj.singularities)),axis=None) #center is idx 0
+        y_vals = np.concatenate((np.array(np.imag(self.data_obj.center)), np.imag(self.data_obj.singularities)),axis=None) #center is idx 0
 
-        if d[ind] >= self.epsilon:
-            ind = None
+        tinv = self.ax1.transData
+        xr = np.reshape(x_vals,(np.shape(x_vals)[0],1))
+        yr = np.reshape(y_vals,(np.shape(y_vals)[0],1))
+        xy_vals = np.append(xr,yr,1)
+        xyt = tinv.transform(xy_vals) #transform to pixels
+        xt, yt = xyt[:, 0], xyt[:, 1] # get initial points x and y pixels
+        d = np.hypot(xt - event.x, yt - event.y) # calc distance from cursor to pt
+        indseq, = np.nonzero(d == d.min()) # get index of point that is closest to cursor
+        idx = indseq[0] # get only index in array
         
-        return ind
+        if d[idx] >= self.epsilon:
+            idx = None # if cursor is within epsilon tolerance of pt, set index to that pt
+        
+        return idx
     
     def motion_detect_callback(self, event):
         'on mouse movement'
 
         if self.p_idx is None:
             return
+        if self.p_idx == 1:  # Case where trailing edge point is selected
+            return
         if event.inaxes is None:
             return
         if event.button != 1:
             return
             
-        #update point loctions
-        self.x_vals[self.p_idx] = event.xdata 
-        self.y_vals[self.p_idx] = event.ydata 
+        #update data
+        if self.p_idx == 0:
+            self.data_obj.center = event.xdata + event.ydata * 1j  # set center location
+            self.data_obj.updateCircle() # update circle parameters
+        else:
+            self.data_obj.singularities[self.p_idx-1] = event.xdata + event.ydata * 1j # set singularity location
+            self.data_obj.updateCoefficients() # update von mises coefficients
+        
+        self.data_obj.conformalMap() #update conformal mapping
         
         #update plot
         self.update_plots()
-        fig.canvas.draw_idle()
+        self.fig.canvas.draw_idle()
 
     def update_plots(self):
         'update plots'
+
+        #Clear Previous Plot
         self.ax1.clear()
-        self.ax1.scatter (self.x_vals,self.y_vals,color='k',marker='o')
-        self.ax1.grid(True)
+        self.ax2.clear()
+        self.ax3.clear()
+        
+        # Circle Plot
+        self.ax1.scatter (np.real(self.data_obj.center), np.imag(self.data_obj.center),color='r',marker='o')
+        self.ax1.scatter (np.real(self.data_obj.singularities),np.imag(self.data_obj.singularities),color='k',marker='o')
+        self.ax1.plot(np.real(self.data_obj.circle_df.circle_pts), np.imag(self.data_obj.circle_df.circle_pts))
 
-##################################################################################
-##################################################################################
+        self.ax1.set_aspect('equal')
+        self.ax1.set_xlim(-2,2)
+        self.ax1.set_ylim(-2,2)
+        self.ax1.grid()
+        self.ax1.vlines(0,-2,2,color='black')
+        self.ax1.hlines(0,-2,2,color='black')
 
-N=10 # number of points
-xmin = 0 
-xmax = 10 
-x_vals = np.linspace(xmin,xmax,N)  # starting x values
-y_vals = np.linspace(xmin,xmax,N)  # starting y values
-p_idx = None #active point
-epsilon = 5 #max pixel distance
+        # Airfoil Plot
+        self.ax2.plot(np.real(self.data_obj.circle_df.airfoil_pts), np.imag(self.data_obj.circle_df.airfoil_pts))
+        self.ax2.set_aspect('equal')
+        self.ax2.set_xlim(-.1,1.1)
+        self.ax2.set_ylim(-.6,.6)
+        self.ax2.grid()
+        self.ax2.vlines(0,-2,2,color='black')
+        self.ax2.hlines(0,-2,2,color='black')
 
+        # Velocity Dist Plot
+        self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
+        self.ax3.set_aspect(.5)
+        self.ax3.set_xlim(0,1.1)
+        self.ax3.set_ylim(0,2.2)
+        self.ax3.grid()
+        self.ax3.vlines(0,-2,2,color='black')
+        self.ax3.hlines(0,-2,2,color='black')
 
-fig,ax1 = plt.subplots(1,1,figsize=(9.0,8.0))
-
-test = InteractivePlot(ax1, x_vals, y_vals, epsilon)
-
-ax1.scatter (x_vals,y_vals,color='k',marker='o')
-
-ax1.set_yscale('linear')
-ax1.set_xlim(0, xmax)
-ax1.set_ylim(0,xmax)
-ax1.set_xlabel('x')
-ax1.set_ylabel('y')
-ax1.grid(True)
-ax1.yaxis.grid(True,which='minor',linestyle='--')
-ax1.legend(loc=2,prop={'size':22})
-
-# Find Event Functions
-fig.canvas.mpl_connect('button_press_event', test.button_press_callback)
-fig.canvas.mpl_connect('button_release_event', test.button_release_callback)
-fig.canvas.mpl_connect('motion_notify_event', test.motion_detect_callback)
-
-plt.show()
