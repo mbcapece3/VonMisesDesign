@@ -27,6 +27,8 @@ class VonMises:
         self.circle_df["circle_pts"] = self.radius * np.exp(self.circle_df.angles*1j)+self.center
 
         #start=timer()
+        #for term in range(1,len(self.singularities)):
+
         self.C1 = self.compute_vonmises_coeff(1)
         self.C2 = self.compute_vonmises_coeff(2)
         self.C3 = self.compute_vonmises_coeff(3)
@@ -122,18 +124,22 @@ class VonMises:
 
         
 #singularities = [1+0j, -1+0j, 0, 0]
-singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
+#singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j]
+#singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
+singularities = [1+0j, .4+.25j, -.95+.15j, -.45-.4j]
+#singularities = [1+0j, .4+.65j, -.95-.05j, -.45-.6j]
 v_inf = 1
 alpha_rad = 0
  
-vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
+#vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
+vm1 = VonMises(-.120+.1j, v_inf, alpha_rad, singularities)
 vm1.conformalMap()
 
 #vm1.plotMapping() # still image
 
 epsilon = 5 #max pixel distance
 
-fig1,(ax1,ax2,ax3) = plt.subplots(1,3,figsize=(15,5))
+fig1,(ax1,ax2,ax3) = plt.subplots(1,3,figsize=(18,5))
 
 vmPlot = VMPlot(vm1, fig1, ax1, ax2, ax3, epsilon)
 
@@ -155,6 +161,8 @@ ax2.set_ylim(-.6,.6)
 ax2.grid()
 ax2.vlines(0,-2,2,color='black')
 ax2.hlines(0,-2,2,color='black')
+ax2.set_xlabel('X/C')
+ax2.set_ylabel('Y/C')
 
 ax3.plot(np.real(vm1.circle_df.airfoil_pts), vm1.circle_df.airfoil_vels/vm1.v_inf)
 ax3.set_aspect(.5)
@@ -163,6 +171,8 @@ ax3.set_ylim(0,2.2)
 ax3.grid()
 ax3.vlines(0,-2,2,color='black')
 ax3.hlines(0,-2,2,color='black')
+ax3.set_xlabel('X/C')
+ax3.set_ylabel('V/Vinf')
 
 # Bind Event Functions
 fig1.canvas.mpl_connect('button_press_event', vmPlot.button_press_callback)
@@ -172,10 +182,11 @@ fig1.canvas.mpl_connect('motion_notify_event', vmPlot.motion_detect_callback)
 plt.show()
 
 ### Outstanding Items ###
-# Add Plot Labels
+# Figure out trailing edge issues. (Might have something to do with the motion process)
+# Ensure correct number of coefficients used for singularities. Also, mapping functions only go up 1 3 coefficients
 # Check results against examples
 # Put high level code in a main file and pull in both classes
-# Points need to always sum to 0. Least squares
+# Least squares?
 # Make X and Y Limits Scale Automatically
 # Start with joukowski and have ability to Add/Remove points
 # Add Import/Export Options when you run the program

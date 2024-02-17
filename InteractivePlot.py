@@ -66,9 +66,19 @@ class VMPlot:
             self.data_obj.center = event.xdata + event.ydata * 1j  # set center location
             self.data_obj.updateCircle() # update circle parameters
         else:
+            self.old_sing_val = self.data_obj.singularities[self.p_idx-1] # store previous singularity value
             self.data_obj.singularities[self.p_idx-1] = event.xdata + event.ydata * 1j # set singularity location
             self.data_obj.updateCoefficients() # update von mises coefficients
-        
+
+            compensation = -1 * (self.data_obj.singularities[self.p_idx-1] - self.old_sing_val) / (len(self.data_obj.singularities) - 2) #amount each other singularity (excluding TE) moves to keep sum  of pts to 0
+
+            for sing_idx in range(1,len(self.data_obj.singularities)):
+                # Excludes idx 1 because trailing edge
+                # Excludes self.p_idx-1 because it is the pt that was moved intentionally
+                if sing_idx != (self.p_idx-1):
+                    self.data_obj.singularities[sing_idx] = self.data_obj.singularities[sing_idx] + compensation
+
+        #print(np.sum(self.data_obj.singularities))
         self.data_obj.conformalMap() #update conformal mapping
         
         #update plot
@@ -103,6 +113,8 @@ class VMPlot:
         self.ax2.grid()
         self.ax2.vlines(0,-2,2,color='black')
         self.ax2.hlines(0,-2,2,color='black')
+        self.ax2.set_xlabel('X/C')
+        self.ax2.set_ylabel('Y/C')
 
         # Velocity Dist Plot
         self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
@@ -112,4 +124,6 @@ class VMPlot:
         self.ax3.grid()
         self.ax3.vlines(0,-2,2,color='black')
         self.ax3.hlines(0,-2,2,color='black')
+        self.ax3.set_xlabel('X/C')
+        self.ax3.set_ylabel('V/Vinf')
 
