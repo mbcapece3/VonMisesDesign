@@ -19,21 +19,17 @@ class VonMises:
         self.circle_LE = self.radius * np.exp(1j * (np.pi + self.beta)) + self.center
         
         circle_data = {
-            "angles": np.arange(-1*self.beta, -1*self.beta + 2*np.pi, 2*np.pi / self.num_pts),
+            "angles": np.linspace(-1*self.beta, -1*self.beta + 2*np.pi, self.num_pts),
         }
 
         self.circle_df = pd.DataFrame(circle_data)
 
         self.circle_df["circle_pts"] = self.radius * np.exp(self.circle_df.angles*1j)+self.center
 
-        #start=timer()
-        #for term in range(1,len(self.singularities)):
-
         self.C1 = self.compute_vonmises_coeff(1)
         self.C2 = self.compute_vonmises_coeff(2)
         self.C3 = self.compute_vonmises_coeff(3)
-        #end= timer()
-        #print(end-start)
+
 
     def compute_vonmises_coeff(self, coeff_num):
             # Compute an Arbitrary Von Mises Transform Coefficient
@@ -56,7 +52,9 @@ class VonMises:
     def updateCircle(self):
         self.radius = abs(self.circle_TE - self.center)
         self.beta = np.arcsin(np.imag(self.center)/self.radius)
+        self.circle_LE = self.radius * np.exp(1j * (np.pi + self.beta)) + self.center
 
+        self.circle_df["angles"] = np.linspace(-1*self.beta, -1*self.beta + 2*np.pi, self.num_pts)
         self.circle_df["circle_pts"] = self.radius * np.exp(self.circle_df.angles*1j)+self.center
 
     def updateCoefficients(self):
@@ -92,6 +90,8 @@ class VonMises:
         self.circle_df.at[0, 'airfoil_vels'] = TE_vel
         self.circle_df.at[self.num_pts-1, 'airfoil_vels'] = TE_vel
 
+        #print(self.circle_df)
+
     def plotMapping(self):
         fig, (ax1,ax2,ax3) = plt.subplots(1,3, figsize=(15,5), gridspec_kw={'height_ratios': [1]})
         ax1.plot(np.real(self.circle_df.circle_pts), np.imag(self.circle_df.circle_pts))
@@ -123,16 +123,16 @@ class VonMises:
 
 
         
-#singularities = [1+0j, -1+0j, 0, 0]
+#singularities = [1+0j, -1+0j]
 #singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j]
-#singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
-singularities = [1+0j, .4+.25j, -.95+.15j, -.45-.4j]
+singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
+#singularities = [1+0j, .4+.25j, -.95+.15j, -.45-.4j]
 #singularities = [1+0j, .4+.65j, -.95-.05j, -.45-.6j]
+
 v_inf = 1
 alpha_rad = 0
  
-#vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
-vm1 = VonMises(-.120+.1j, v_inf, alpha_rad, singularities)
+vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
 vm1.conformalMap()
 
 #vm1.plotMapping() # still image
@@ -182,7 +182,6 @@ fig1.canvas.mpl_connect('motion_notify_event', vmPlot.motion_detect_callback)
 plt.show()
 
 ### Outstanding Items ###
-# Figure out trailing edge issues. (Might have something to do with the motion process)
 # Ensure correct number of coefficients used for singularities. Also, mapping functions only go up 1 3 coefficients
 # Check results against examples
 # Put high level code in a main file and pull in both classes
@@ -193,6 +192,6 @@ plt.show()
 # Display exact singularity/center values. Maybe have sliders/manual entry box
 # Compute lift from circulation
 # Can I have an option to compute drag with boundary layer equations?
-# Can I Run this in a Jupyter Kernel online?
+# Run online with PyScript or make an compile an executable
 
 

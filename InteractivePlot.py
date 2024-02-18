@@ -54,6 +54,8 @@ class VMPlot:
 
         if self.p_idx is None:
             return
+        if len(self.data_obj.singularities)==2 and self.p_idx!=0: # case of joukowski airfoil
+            return
         if self.p_idx == 1:  # Case where trailing edge point is selected
             return
         if event.inaxes is None:
@@ -68,8 +70,8 @@ class VMPlot:
         else:
             self.old_sing_val = self.data_obj.singularities[self.p_idx-1] # store previous singularity value
             self.data_obj.singularities[self.p_idx-1] = event.xdata + event.ydata * 1j # set singularity location
-            self.data_obj.updateCoefficients() # update von mises coefficients
 
+            #Adjust singularity values to ensure all singularities sum to zero
             compensation = -1 * (self.data_obj.singularities[self.p_idx-1] - self.old_sing_val) / (len(self.data_obj.singularities) - 2) #amount each other singularity (excluding TE) moves to keep sum  of pts to 0
 
             for sing_idx in range(1,len(self.data_obj.singularities)):
@@ -77,6 +79,8 @@ class VMPlot:
                 # Excludes self.p_idx-1 because it is the pt that was moved intentionally
                 if sing_idx != (self.p_idx-1):
                     self.data_obj.singularities[sing_idx] = self.data_obj.singularities[sing_idx] + compensation
+            
+            self.data_obj.updateCoefficients() # update von mises coefficients
 
         #print(np.sum(self.data_obj.singularities))
         self.data_obj.conformalMap() #update conformal mapping
