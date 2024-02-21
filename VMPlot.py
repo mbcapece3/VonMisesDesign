@@ -3,14 +3,25 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 class VMPlot:
-    def __init__(self, data_obj, fig, ax1, ax2, ax3, epsilon):
+    def __init__(self, data_obj, epsilon=5):
         self.data_obj = data_obj # VonMises style object
-        self.fig = fig
-        self.ax1 = ax1
-        self.ax2 = ax2
-        self.ax3 = ax3
+        #self.fig = fig
+        #self.ax1 = ax1
+        #self.ax2 = ax2
+        #self.ax3 = ax3
         self.p_idx = None #active point
         self.epsilon = epsilon #max pixel distance
+
+        self.fig,(self.ax1,self.ax2,self.ax3) = plt.subplots(1,3,figsize=(18,5))  # Create figure
+        self.data_obj.conformalMap() # Compute initial transform
+        self.update_plots()  # Initial Plot
+
+        # Bind interactive actions
+        self.fig.canvas.mpl_connect('button_press_event', self.button_press_callback)
+        self.fig.canvas.mpl_connect('button_release_event', self.button_release_callback)
+        self.fig.canvas.mpl_connect('motion_notify_event', self.motion_detect_callback)
+
+        plt.show() # show plot
 
     def button_press_callback(self, event):
         'whenever a mouse button is pressed'
@@ -101,7 +112,6 @@ class VMPlot:
         self.ax1.scatter (np.real(self.data_obj.center), np.imag(self.data_obj.center),color='r',marker='o')
         self.ax1.scatter (np.real(self.data_obj.singularities),np.imag(self.data_obj.singularities),color='k',marker='o')
         self.ax1.plot(np.real(self.data_obj.circle_df.circle_pts), np.imag(self.data_obj.circle_df.circle_pts))
-
         self.ax1.set_aspect('equal')
         self.ax1.set_xlim(-2,2)
         self.ax1.set_ylim(-2,2)
