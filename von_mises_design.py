@@ -26,6 +26,9 @@ class VonMises:
 
         self.circle_df["circle_pts"] = self.radius * np.exp(self.circle_df.angles*1j)+self.center
 
+        # Generate Von Mises Transform Coefficients
+        self.coefficients = [self.compute_vonmises_coeff(c) for c in range(1,len(self.singularities))]
+
         self.C1 = self.compute_vonmises_coeff(1)
         self.C2 = self.compute_vonmises_coeff(2)
         self.C3 = self.compute_vonmises_coeff(3)
@@ -58,6 +61,8 @@ class VonMises:
         self.circle_df["circle_pts"] = self.radius * np.exp(self.circle_df.angles*1j)+self.center
 
     def updateCoefficients(self):
+        self.coefficients = [self.compute_vonmises_coeff(c) for c in range(1,len(self.singularities))]
+
         self.C1 = self.compute_vonmises_coeff(1)
         self.C2 = self.compute_vonmises_coeff(2)
         self.C3 = self.compute_vonmises_coeff(3)
@@ -68,24 +73,51 @@ class VonMises:
     def setAlpha_rad(self, alpha_rad):
         self.alpha_rad = alpha_rad
 
+    def vmTransform(self,value,deriv=0):
+        
+        #trans_value = [trans_value + self.coefficients[term_idx] / value**(term_idx+1) for term_idx in range(len(self.coefficients))]
+
+        if deriv == 0:
+            trans_value = value
+            for term_idx in range(len(self.coefficients)):
+                trans_value = trans_value + self.coefficients[term_idx] / value**(term_idx+1)
+        elif deriv == 1:
+            trans_value = 1
+            for term_idx in range(len(self.coefficients)):
+                trans_value = trans_value - (term_idx+1) * self.coefficients[term_idx] / value**(term_idx+2)
+        elif deriv == 2:
+            trans_value = 0
+            for term_idx in range(len(self.coefficients)):
+                trans_value = trans_value + (term_idx**2 + 3*term_idx + 2) * self.coefficients[term_idx] / value**(term_idx+3)
+
+        return trans_value
+
     def conformalMap(self):
 
         # Map Airfoil Geometry
-        self.circle_df["mapped_pts"] = self.circle_df.circle_pts + self.C1/self.circle_df.circle_pts + self.C2/(self.circle_df.circle_pts**2) + self.C3/(self.circle_df.circle_pts**3)
+        #self.circle_df["mapped_pts"] = self.circle_df.circle_pts + self.C1/self.circle_df.circle_pts + self.C2/(self.circle_df.circle_pts**2) + self.C3/(self.circle_df.circle_pts**3)
+        self.circle_df["mapped_pts"] = self.vmTransform(self.circle_df.circle_pts.copy())
 
         # Scale Airfoil Geometry to X/C
-        self.airfoil_TE = self.circle_TE + self.C1/self.circle_TE + self.C2/self.circle_TE**2 + self.C3/self.circle_TE**3
-        self.airfoil_LE = self.circle_LE + self.C1/self.circle_LE + self.C2/self.circle_LE**2 + self.C3/self.circle_LE**3
+        #self.airfoil_TE = self.circle_TE + self.C1/self.circle_TE + self.C2/self.circle_TE**2 + self.C3/self.circle_TE**3
+        #self.airfoil_LE = self.circle_LE + self.C1/self.circle_LE + self.C2/self.circle_LE**2 + self.C3/self.circle_LE**3
+        self.airfoil_TE = self.vmTransform(self.circle_TE)
+        self.airfoil_LE = self.vmTransform(self.circle_LE)
         self.chord = abs(self.airfoil_TE - self.airfoil_LE)
         self.circle_df["airfoil_pts"] = (np.real(self.circle_df.mapped_pts) - np.real(self.airfoil_LE)) / self.chord + (np.imag(self.circle_df.mapped_pts) / self.chord)*1j
         
         # Map Airfoil Surface Velocities 
         self.circle_df["circle_vels"] = 2*v_inf*(np.sin(alpha_rad + self.beta) - np.sin(alpha_rad - self.circle_df.angles))
-        self.circle_df["map_func_derivatives"] = 1 - self.C1/(self.circle_df.circle_pts**2) - 2*self.C2/(self.circle_df.circle_pts**3) - 3*self.C3/(self.circle_df.circle_pts**4)  # first derivative of airfoil pts wrt circle pts
+        
+        #self.circle_df["map_func_derivatives"] = 1 - self.C1/(self.circle_df.circle_pts**2) - 2*self.C2/(self.circle_df.circle_pts**3) - 3*self.C3/(self.circle_df.circle_pts**4)  # first derivative of airfoil pts wrt circle pts
+        self.circle_df["map_func_derivatives"] = self.vmTransform(self.circle_df.circle_pts.copy(), deriv=1)
+
         self.circle_df["airfoil_vels"] = abs(self.circle_df.circle_vels) / abs(self.circle_df.map_func_derivatives)
 
         # Manually Set TE_Vel with L'hopitals rule because indeterminate
-        TE_map_func_second_deriv = 2*self.C1/(self.circle_TE**3) + 6*self.C2/(self.circle_TE**4) + 12*self.C3/(self.circle_TE**5)  # second derivative of airfoil pts wrt circle pts evaluated at trailing edge
+        #TE_map_func_second_deriv = 2*self.C1/(self.circle_TE**3) + 6*self.C2/(self.circle_TE**4) + 12*self.C3/(self.circle_TE**5)  # second derivative of airfoil pts wrt circle pts evaluated at trailing edge
+        TE_map_func_second_deriv = self.vmTransform(self.circle_TE, deriv=2)
+       
         TE_vel = abs(2*v_inf*np.cos(alpha_rad+self.beta)/self.radius) / abs(TE_map_func_second_deriv)  # velocity at trailing edge
         self.circle_df.at[0, 'airfoil_vels'] = TE_vel
         self.circle_df.at[self.num_pts-1, 'airfoil_vels'] = TE_vel
@@ -125,14 +157,16 @@ class VonMises:
         
 #singularities = [1+0j, -1+0j]
 #singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j]
-singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
+#singularities = [1+0j, -1+0j, .37-.471j, -.37+.471j]
 #singularities = [1+0j, .4+.25j, -.95+.15j, -.45-.4j]
 #singularities = [1+0j, .4+.65j, -.95-.05j, -.45-.6j]
+singularities = [1+0j, -1-.240j, .3-.15j, -.4+.3j, .15+.09j, -.05+0j]
 
 v_inf = 1
 alpha_rad = 0
  
-vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
+#vm1 = VonMises(-.072+.29j, v_inf, alpha_rad, singularities)
+vm1 = VonMises(-.118+0j, v_inf, alpha_rad, singularities)
 vm1.conformalMap()
 
 #vm1.plotMapping() # still image
@@ -182,7 +216,7 @@ fig1.canvas.mpl_connect('motion_notify_event', vmPlot.motion_detect_callback)
 plt.show()
 
 ### Outstanding Items ###
-# Ensure correct number of coefficients used for singularities. Also, mapping functions only go up 1 3 coefficients
+# Ensure correct number of coefficients used for singularities. Also, mapping functions only go up 1 3 coefficients !!!!!!!!!!!!!!!!!!!!!!!!
 # Check results against examples
 # Put high level code in a main file and pull in both classes
 # Least squares?
