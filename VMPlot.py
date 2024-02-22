@@ -5,14 +5,12 @@ import numpy as np
 class VMPlot:
     def __init__(self, data_obj, epsilon=5):
         self.data_obj = data_obj # VonMises style object
-        #self.fig = fig
-        #self.ax1 = ax1
-        #self.ax2 = ax2
-        #self.ax3 = ax3
         self.p_idx = None #active point
         self.epsilon = epsilon #max pixel distance
 
         self.fig,(self.ax1,self.ax2,self.ax3) = plt.subplots(1,3,figsize=(18,5))  # Create figure
+        self.fig.subplots_adjust(left=0.13, bottom=0.15) #Adjust to "push" subplots up and to the right
+
         self.data_obj.conformalMap() # Compute initial transform
         self.update_plots()  # Initial Plot
 
@@ -20,6 +18,21 @@ class VMPlot:
         self.fig.canvas.mpl_connect('button_press_event', self.button_press_callback)
         self.fig.canvas.mpl_connect('button_release_event', self.button_release_callback)
         self.fig.canvas.mpl_connect('motion_notify_event', self.motion_detect_callback)
+
+        # Define Angle of Attack Slider
+        aoa = self.fig.add_axes([0.19,0.02,0.65,0.03])
+        self.slider_aoa = Slider(aoa, 'Angle of Attack',-45,45, valinit=self.data_obj.alpha_rad * 180 / np.pi, valstep = np.linspace(-45,45,181))
+        self.slider_aoa.on_changed(self.update_aoa)
+
+        # Define Add Point Button
+        add_pt = plt.axes([0.015,0.02,0.06,0.05])
+        self.button_add_pt = Button(add_pt, 'Add Pole', color='.75', hovercolor='.9')
+        self.button_add_pt.on_clicked(self.add_singularity)
+
+        # Define Remove Point Button
+        remove_pt = plt.axes([0.015,0.1,0.06,0.05])
+        self.button_remove_pt = Button(remove_pt, 'Remove Pole', color='.75', hovercolor='.9')
+        self.button_remove_pt.on_clicked(self.remove_singularity)
 
         plt.show() # show plot
 
@@ -100,19 +113,45 @@ class VMPlot:
         self.update_plots()
         self.fig.canvas.draw_idle()
 
+    def update_aoa(self, event):
+        'update angle of attack'
+        self.data_obj.setAlpha_rad(self.slider_aoa.val * np.pi / 180) # get slider value in degrees and input in radians
+        self.data_obj.conformalMap() # update conformal mapping
+        self.update_plots() 
+        self.fig.canvas.draw_idle()
+
+    def add_singularity(self, event):
+        'add singularity at 0'
+        self.data_obj.singularities = self.data_obj.singularities + [0.0+0.0j]  # Add singularity at 0 as to not affect other values
+        self.data_obj.updateCoefficients() # update von mises coefficients
+        self.data_obj.conformalMap() # update conformal mapping
+        self.update_plots() 
+        self.fig.canvas.draw_idle()
+
+    def remove_singularity(self, event):
+        'remove last singularity'
+        num_sing = len(self.data_obj.singularities)
+        if num_sing > 2:
+            xvals = np.linspace(1,-1,num_sing-1) # X values linearly spaces so sum is 0. Idx 0 must be trailing edge becuase idx 0 is fixed in place
+            self.data_obj.singularities = xvals + 0j
+            self.data_obj.updateCoefficients() # update von mises coefficients
+            self.data_obj.conformalMap() # update conformal mapping
+            self.update_plots() 
+            self.fig.canvas.draw_idle()
+
     def update_plots(self):
         'update plots'
-
         #Clear Previous Plot
         self.ax1.clear()
         self.ax2.clear()
         self.ax3.clear()
-        
+
         # Circle Plot
         self.ax1.scatter (np.real(self.data_obj.center), np.imag(self.data_obj.center),color='r',marker='o')
         self.ax1.scatter (np.real(self.data_obj.singularities),np.imag(self.data_obj.singularities),color='k',marker='o')
         self.ax1.plot(np.real(self.data_obj.circle_df.circle_pts), np.imag(self.data_obj.circle_df.circle_pts))
         self.ax1.set_aspect('equal')
+        self.ax1.set_title('Circle Plane')
         self.ax1.set_xlim(-2,2)
         self.ax1.set_ylim(-2,2)
         self.ax1.grid()
@@ -122,6 +161,7 @@ class VMPlot:
         # Airfoil Plot
         self.ax2.plot(np.real(self.data_obj.circle_df.airfoil_pts), np.imag(self.data_obj.circle_df.airfoil_pts))
         self.ax2.set_aspect('equal')
+        self.ax2.set_title('Airfoil Plane')
         self.ax2.set_xlim(-.1,1.1)
         self.ax2.set_ylim(-.6,.6)
         self.ax2.grid()
@@ -133,6 +173,7 @@ class VMPlot:
         # Velocity Dist Plot
         self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
         self.ax3.set_aspect(.5)
+        self.ax3.set_title('Velocity Distribution')
         self.ax3.set_xlim(0,1.1)
         self.ax3.set_ylim(0,2.2)
         self.ax3.grid()
@@ -140,4 +181,7 @@ class VMPlot:
         self.ax3.hlines(0,-2,2,color='black')
         self.ax3.set_xlabel('X/C')
         self.ax3.set_ylabel('V/Vinf')
+        self.ax3.text(1.2,2.0,f'α  = {self.data_obj.alpha_rad * 180 / np.pi:.2f}',fontsize=12) # Display angle of attack
+        self.ax3.text(1.2,1.85,f'Cl = {self.data_obj.Cl:.2f}',fontsize=12) # Display lift coefficient
+
 

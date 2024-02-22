@@ -113,6 +113,10 @@ class VonMises:
         self.circle_df.at[0, 'airfoil_vels'] = TE_vel
         self.circle_df.at[self.num_pts-1, 'airfoil_vels'] = TE_vel
 
+        # Calculate Lift Coefficient
+        self.Cl = 8 * np.pi * (self.radius / self.chord) * np.sin(self.alpha_rad + self.beta)
+
+
     def plotMapping(self):
         # Plots a still image of the Von Mises Transform
         fig, (ax1,ax2,ax3) = plt.subplots(1,3, figsize=(15,5), gridspec_kw={'height_ratios': [1]})
