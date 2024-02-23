@@ -1,18 +1,28 @@
-from matplotlib.widgets import Slider, Button
+from matplotlib.widgets import Slider, Button, RadioButtons
 from matplotlib import pyplot as plt
 import numpy as np
 
 class VMPlot:
     def __init__(self, data_obj, epsilon=5):
+        #Initialize Values
         self.data_obj = data_obj # VonMises style object
         self.p_idx = None #active point
         self.epsilon = epsilon #max pixel distance
+        self.toggle_state = 'Velocity' # default distribution plot
 
+        # Create Figure
         self.fig,(self.ax1,self.ax2,self.ax3) = plt.subplots(1,3,figsize=(18,5))  # Create figure
         self.fig.subplots_adjust(left=0.13, bottom=0.15) #Adjust to "push" subplots up and to the right
+        
+        # Compute initial transform
+        self.data_obj.conformalMap()
 
-        self.data_obj.conformalMap() # Compute initial transform
-        self.update_plots()  # Initial Plot
+        # Initialize Figure Textboxes
+        self.alpha_text = self.fig.text(.9,.80,f'α  = {self.data_obj.alpha_rad * 180 / np.pi:.2f}',fontsize=12) # Display angle of attack
+        self.Cl_text = self.fig.text(.9,.85,f'Cl = {self.data_obj.Cl:.2f}',fontsize=12) # Display lift coefficient
+
+        # Initial Plot
+        self.update_plots()  
 
         # Bind interactive actions
         self.fig.canvas.mpl_connect('button_press_event', self.button_press_callback)
@@ -25,14 +35,34 @@ class VMPlot:
         self.slider_aoa.on_changed(self.update_aoa)
 
         # Define Add Point Button
-        add_pt = plt.axes([0.015,0.02,0.06,0.05])
+        add_pt = plt.axes([0.015,0.12,0.07,0.05])
         self.button_add_pt = Button(add_pt, 'Add Pole', color='.75', hovercolor='.9')
         self.button_add_pt.on_clicked(self.add_singularity)
 
         # Define Remove Point Button
-        remove_pt = plt.axes([0.015,0.1,0.06,0.05])
+        remove_pt = plt.axes([0.015,0.20,0.07,0.05])
         self.button_remove_pt = Button(remove_pt, 'Remove Pole', color='.75', hovercolor='.9')
         self.button_remove_pt.on_clicked(self.remove_singularity)
+
+        # Define Distribution Type Radio Button
+        radio = plt.axes([0.9, 0.15, 0.06, 0.15])
+        self.radio_select = RadioButtons(radio, ('Velocity', 'Pressure'), active=0)
+        self.radio_select.on_clicked(self.toggle_radio)
+
+        # Define Save File Button
+        save_file = plt.axes([0.015,0.8,0.07,0.05])
+        self.button_save_file = Button(save_file, 'Create Save File', color='.75', hovercolor='.9')
+        #self.button_save_file.on_clicked()
+
+        # Define Load File Button
+        load_file = plt.axes([0.015,0.72,0.07,0.05])
+        self.button_load_file = Button(load_file, 'Load Save File', color='.75', hovercolor='.9')
+        #self.button_load_file.on_clicked()
+
+        # Define Export DAT Button
+        export_dat = plt.axes([0.015,0.64,0.07,0.05])
+        self.button_export_dat = Button(export_dat, 'Export DAT File', color='.75', hovercolor='.9')
+        #self.button_export_dat.on_clicked()
 
         plt.show() # show plot
 
@@ -133,11 +163,17 @@ class VMPlot:
         num_sing = len(self.data_obj.singularities)
         if num_sing > 2:
             xvals = np.linspace(1,-1,num_sing-1) # X values linearly spaces so sum is 0. Idx 0 must be trailing edge becuase idx 0 is fixed in place
-            self.data_obj.singularities = xvals + 0j
+            self.data_obj.singularities = [(val + 0j) for val in xvals] 
             self.data_obj.updateCoefficients() # update von mises coefficients
             self.data_obj.conformalMap() # update conformal mapping
             self.update_plots() 
             self.fig.canvas.draw_idle()
+
+    def toggle_radio(self, event):
+        'switch distribution plot'
+        self.toggle_state = event
+        self.update_plots() 
+        self.fig.canvas.draw_idle()
 
     def update_plots(self):
         'update plots'
@@ -145,6 +181,12 @@ class VMPlot:
         self.ax1.clear()
         self.ax2.clear()
         self.ax3.clear()
+        self.alpha_text.remove()
+        self.Cl_text.remove()
+
+        # Display Textboxes
+        self.alpha_text = self.fig.text(.9,.80,f'α  = {self.data_obj.alpha_rad * 180 / np.pi:.2f}',fontsize=12) # Display angle of attack
+        self.Cl_text = self.fig.text(.9,.85,f'Cl = {self.data_obj.Cl:.2f}',fontsize=12) # Display lift coefficient
 
         # Circle Plot
         self.ax1.scatter (np.real(self.data_obj.center), np.imag(self.data_obj.center),color='r',marker='o')
@@ -170,18 +212,32 @@ class VMPlot:
         self.ax2.set_xlabel('X/C')
         self.ax2.set_ylabel('Y/C')
 
-        # Velocity Dist Plot
-        self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
-        self.ax3.set_aspect(.5)
-        self.ax3.set_title('Velocity Distribution')
-        self.ax3.set_xlim(0,1.1)
-        self.ax3.set_ylim(0,2.2)
-        self.ax3.grid()
-        self.ax3.vlines(0,-2,2,color='black')
-        self.ax3.hlines(0,-2,2,color='black')
-        self.ax3.set_xlabel('X/C')
-        self.ax3.set_ylabel('V/Vinf')
-        self.ax3.text(1.2,2.0,f'α  = {self.data_obj.alpha_rad * 180 / np.pi:.2f}',fontsize=12) # Display angle of attack
-        self.ax3.text(1.2,1.85,f'Cl = {self.data_obj.Cl:.2f}',fontsize=12) # Display lift coefficient
+        # Distribution Plot
+        if self.toggle_state == 'Velocity':
+            # Velocity Dist Plot
+            self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
+            self.ax3.set_aspect(.5)
+            self.ax3.set_title('Velocity Distribution')
+            self.ax3.set_xlim(0,1.1)
+            self.ax3.set_ylim(0,2.2)
+            self.ax3.grid()
+            self.ax3.vlines(0,-2,2,color='black')
+            self.ax3.hlines(0,-2,2,color='black')
+            self.ax3.set_xlabel('X/C')
+            self.ax3.set_ylabel('V/Vinf')
+
+        elif self.toggle_state == 'Pressure':
+            # Presure Dist Plot
+            self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_Cp)
+            self.ax3.set_aspect(.25)
+            self.ax3.set_title('Pressure Distribution')
+            self.ax3.set_xlim(0,1.1)
+            self.ax3.set_ylim(1,-3.4)
+            self.ax3.grid()
+            self.ax3.vlines(0,-2,2,color='black')
+            self.ax3.hlines(0,-2,2,color='black')
+            self.ax3.set_xlabel('X/C')
+            self.ax3.set_ylabel('Cp')
+
 
 

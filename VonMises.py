@@ -113,6 +113,9 @@ class VonMises:
         self.circle_df.at[0, 'airfoil_vels'] = TE_vel
         self.circle_df.at[self.num_pts-1, 'airfoil_vels'] = TE_vel
 
+        # Calculate Pressure Coefficients
+        self.circle_df["airfoil_Cp"] = 1 - (self.circle_df.airfoil_vels / self.v_inf)**2
+        
         # Calculate Lift Coefficient
         self.Cl = 8 * np.pi * (self.radius / self.chord) * np.sin(self.alpha_rad + self.beta)
 
