@@ -12,8 +12,9 @@ vm1 = VonMises(center, v_inf, alpha_rad, singularities)
 vmPlot = VMPlot(vm1)
 
 ### Outstanding Items ###
+# Update Readme. Provide download link for copiled version. Show example image
 # Try to optimize
-# Rotate to ensure chord parallel to real axis. Is aoa inherently relative to chord in the match?
+# Rotate to ensure chord parallel to real axis. Is aoa inherently relative to chord in the math?
 # Calculate Cm
 # Calculate Cd with boundary layer equations?
 # Test EXE on windows 11 CPU
