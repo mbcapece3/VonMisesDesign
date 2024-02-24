@@ -12,14 +12,12 @@ vm1 = VonMises(center, v_inf, alpha_rad, singularities)
 vmPlot = VMPlot(vm1)
 
 ### Outstanding Items ###
-# Make X and Y Limits Scale Automatically
 # Try to optimize
-# Can I have an option to compute drag with boundary layer equations?
-#Test EXE on windows 11 CPU
-# Change File Write commands to Print in pyscript version
+# Rotate to ensure chord parallel to real axis. Is aoa inherently relative to chord in the match?
+# Calculate Cm
+# Calculate Cd with boundary layer equations?
+# Test EXE on windows 11 CPU
 
 ### Notes ###
-# Sometimes weird artifacts show up in pressure dist when running in XFOIL
-# PANE command before running seems to remove these
-
+# Sometimes artifacts show up in pressure dist when running in XFOIL. PANE command before running seems to remove these
 # To Compile: cxfreeze -c VonMisesDesign.py 
