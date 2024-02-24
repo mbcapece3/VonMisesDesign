@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import itertools
-from timeit import default_timer as timer
+#from timeit import default_timer as timer
 
 class VonMises:
      
