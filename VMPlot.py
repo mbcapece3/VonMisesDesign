@@ -52,17 +52,17 @@ class VMPlot:
         # Define Save File Button
         save_file = plt.axes([0.015,0.8,0.07,0.05])
         self.button_save_file = Button(save_file, 'Create Save File', color='.75', hovercolor='.9')
-        #self.button_save_file.on_clicked()
+        self.button_save_file.on_clicked(self.save_file_callback)
 
         # Define Load File Button
         load_file = plt.axes([0.015,0.72,0.07,0.05])
         self.button_load_file = Button(load_file, 'Load Save File', color='.75', hovercolor='.9')
-        #self.button_load_file.on_clicked()
+        self.button_load_file.on_clicked(self.load_file_callback)
 
         # Define Export DAT Button
         export_dat = plt.axes([0.015,0.64,0.07,0.05])
         self.button_export_dat = Button(export_dat, 'Export DAT File', color='.75', hovercolor='.9')
-        #self.button_export_dat.on_clicked()
+        self.button_export_dat.on_clicked(self.export_DAT_callback)
 
         plt.show() # show plot
 
@@ -174,6 +174,21 @@ class VMPlot:
         self.toggle_state = event
         self.update_plots() 
         self.fig.canvas.draw_idle()
+
+    def save_file_callback(self, event):
+        'save airfoil info to file'
+        self.data_obj.saveFile()
+
+    def load_file_callback(self, event):
+        'load airfoil info from file'
+        self.data_obj.loadFile()
+        self.data_obj.conformalMap() # update conformal mapping
+        self.update_plots() 
+        self.fig.canvas.draw_idle()
+
+    def export_DAT_callback(self, event):
+        'save airfoil coordinates to file'
+        self.data_obj.exportDAT()
 
     def update_plots(self):
         'update plots'

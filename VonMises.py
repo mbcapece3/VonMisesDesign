@@ -28,9 +28,8 @@ class VonMises:
         # Generate Initial Von Mises Transform Coefficients
         self.coefficients = [self.compute_vonmises_coeff(c) for c in range(1,len(self.singularities))]
 
-        self.C1 = self.compute_vonmises_coeff(1)
-        self.C2 = self.compute_vonmises_coeff(2)
-        self.C3 = self.compute_vonmises_coeff(3)
+        self.conformalMap()
+
 
 
     def compute_vonmises_coeff(self, coeff_num):
@@ -148,3 +147,67 @@ class VonMises:
         ax3.grid()
         ax3.vlines(0,-2,2,color='black')
         ax3.hlines(0,-2,2,color='black')
+
+    def saveFile(self):
+        # Saves Circle Data to file
+        file_name = input("Enter File Name: ")
+        f = open(file_name + ".txt", "w")
+        f.write(f"Von Mises Airfoil Data\n\nCenter\n{self.center}\n\nPoles\n")
+        [f.write(f"{self.singularities[idx]}\n") for idx in range(len(self.singularities))]
+
+    def loadFile(self):
+        # Load Circle Data from file
+        f=None
+
+        file_name = input("Enter File Name: ")
+
+        try:
+            f = open(file_name, "r")
+        except:
+            print("Cannot Find File")
+
+        getCenter = False
+        getPoles = False
+        center = []
+        poles = []
+        
+        if f:
+            try:
+
+                for line in f:
+                    if line.startswith('Center'):
+                        getCenter = True
+                        getPoles = False
+                    elif line.startswith('Poles'):
+                        getCenter = False
+                        getPoles = True
+
+                    if getCenter:
+                        center.append(line.strip())
+
+                    if getPoles:
+                        poles.append(line.strip())
+
+                center = complex(center[1])
+                poles = [complex(poles[idx]) for idx in range(1,len(poles)) if poles[idx]]
+
+                if center and poles:
+                    self.center = center
+                    self.singularities = poles
+                    self.updateCircle()
+                    self.updateCoefficients()
+                else :
+                    print('File Missing Data')
+
+            except:
+                print('Invalid File Format')
+
+
+        
+    def exportDAT(self):
+        # Saves Circle Data to file
+        airfoil_name = input("Enter Airfoil Name: ")
+        file_name = input("Enter DAT File Name: ")
+        f = open(file_name + ".dat", "w")
+        f.write(f"{airfoil_name}\n")
+        [f.write(f"  {np.real(self.circle_df.airfoil_pts[idx]):.6f}  {np.imag(self.circle_df.airfoil_pts[idx]):.6f}\n") for idx in range(len(self.circle_df.airfoil_pts))]
