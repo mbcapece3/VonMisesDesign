@@ -90,6 +90,10 @@ class VonMises:
                 trans_value = trans_value + (term_idx**2 + 3*term_idx + 2) * self.coefficients[term_idx] / value**(term_idx+3)
 
         return trans_value
+    
+    def scaleAirfoilPts(self,pts):
+        scaled_pts = (np.real(pts) - np.real(self.airfoil_LE)) / self.chord + (np.imag(pts) / self.chord)*1j
+        return scaled_pts
 
     def conformalMap(self):
         # Map Airfoil Geometry
@@ -97,9 +101,14 @@ class VonMises:
 
         # Scale Airfoil Geometry to X/C
         self.airfoil_TE = self.vmTransform(self.circle_TE)
-        self.airfoil_LE = self.vmTransform(self.circle_LE)
+        #self.airfoil_LE = self.vmTransform(self.circle_LE)  # Uses 180deg from circle TE as circle LE
+        self.airfoil_LE = self.circle_df.mapped_pts[np.argmin(np.real(self.circle_df.mapped_pts))]  # Uses leftmost mapped pt as LE
         self.chord = abs(self.airfoil_TE - self.airfoil_LE)
         self.circle_df["airfoil_pts"] = (np.real(self.circle_df.mapped_pts) - np.real(self.airfoil_LE)) / self.chord + (np.imag(self.circle_df.mapped_pts) / self.chord)*1j
+        
+        #Rotation Test
+        #rotation_deg = -20
+        #self.circle_df["airfoil_pts"] = ((np.real(self.circle_df.mapped_pts) - np.real(self.airfoil_LE)) / self.chord + (np.imag(self.circle_df.mapped_pts) / self.chord)*1j) * np.exp(-1j*rotation_deg*np.pi/180)
         
         # Map Airfoil Surface Velocities 
         self.circle_df["circle_vels"] = 2*self.v_inf*(np.sin(self.alpha_rad + self.beta) - np.sin(self.alpha_rad - self.circle_df.angles))
@@ -150,64 +159,89 @@ class VonMises:
 
     def saveFile(self):
         # Saves Circle Data to file
-        file_name = input("Enter File Name: ")
-        f = open(file_name + ".txt", "w")
-        f.write(f"Von Mises Airfoil Data\n\nCenter\n{self.center}\n\nPoles\n")
-        [f.write(f"{self.singularities[idx]}\n") for idx in range(len(self.singularities))]
+        valid_name=True
+
+        try:
+            file_name = input("Enter File Name: ")
+        except:
+            print('Invalid Input. Try Again:')
+            valid_name=False
+
+        if valid_name:
+            f = open(file_name + ".txt", "w")
+            f.write(f"Von Mises Airfoil Data\n\nCenter\n{self.center}\n\nPoles\n")
+            [f.write(f"{self.singularities[idx]}\n") for idx in range(len(self.singularities))]
 
     def loadFile(self):
         # Load Circle Data from file
         f=None
-
-        file_name = input("Enter File Name: ")
+        valid_name=True
 
         try:
-            f = open(file_name, "r")
+            file_name = input("Enter File Name: ")
+            valid_name=True
         except:
-            print("Cannot Find File")
+            print('Invalid Input. Try Again:')
+            valid_name=False
 
-        getCenter = False
-        getPoles = False
-        center = []
-        poles = []
-        
-        if f:
+        if valid_name:
             try:
+                f = open(file_name, "r")
+            except:
+                print("Cannot Find File")
 
-                for line in f:
-                    if line.startswith('Center'):
-                        getCenter = True
-                        getPoles = False
-                    elif line.startswith('Poles'):
-                        getCenter = False
-                        getPoles = True
+            getCenter = False
+            getPoles = False
+            center = []
+            poles = []
+            
+            if f:
+                try:
+                    for line in f:
+                        if line.startswith('Center'):
+                            getCenter = True
+                            getPoles = False
+                        elif line.startswith('Poles'):
+                            getCenter = False
+                            getPoles = True
 
-                    if getCenter:
-                        center.append(line.strip())
+                        if getCenter:
+                            center.append(line.strip())
 
-                    if getPoles:
-                        poles.append(line.strip())
+                        if getPoles:
+                            poles.append(line.strip())
 
-                center = complex(center[1])
-                poles = [complex(poles[idx]) for idx in range(1,len(poles)) if poles[idx]]
+                    center = complex(center[1])
+                    poles = [complex(poles[idx]) for idx in range(1,len(poles)) if poles[idx]]
 
-                if center and poles:
                     self.center = center
                     self.singularities = poles
                     self.updateCircle()
                     self.updateCoefficients()
-                else :
-                    print('File Missing Data')
 
-            except:
-                print('Invalid File Format')
+                except:
+                    print('Invalid File Format')
 
 
         
     def exportDAT(self):
         # Saves Circle Data to file
-        airfoil_name = input("Enter Airfoil Name: ")
-        file_name = input("Enter DAT File Name: ")
-        f = open(file_name + ".dat", "w")
-        f.write(f"{airfoil_name}\n")
-        [f.write(f"  {np.real(self.circle_df.airfoil_pts[idx]):.6f}  {np.imag(self.circle_df.airfoil_pts[idx]):.6f}\n") for idx in range(len(self.circle_df.airfoil_pts))]
+        valid_name=True
+
+        try:
+            airfoil_name = input("Enter Airfoil Name: ")
+        except:
+            print('Invalid Input. Try Again:')
+            valid_name=False
+
+        if valid_name:
+            try:
+                file_name = input("Enter DAT File Name: ")
+            except:
+                print('Invalid Input. Try Again:')
+                valid_name=False
+        
+        if valid_name:
+            f = open(file_name + ".dat", "w")
+            f.write(f"{airfoil_name}\n")
+            [f.write(f"  {np.real(self.circle_df.airfoil_pts[idx]):.6f}  {np.imag(self.circle_df.airfoil_pts[idx]):.6f}\n") for idx in range(len(self.circle_df.airfoil_pts))]

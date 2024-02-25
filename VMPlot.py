@@ -207,6 +207,7 @@ class VMPlot:
         self.ax1.scatter (np.real(self.data_obj.center), np.imag(self.data_obj.center),color='r',marker='o')
         self.ax1.scatter (np.real(self.data_obj.singularities),np.imag(self.data_obj.singularities),color='k',marker='o')
         self.ax1.plot(np.real(self.data_obj.circle_df.circle_pts), np.imag(self.data_obj.circle_df.circle_pts))
+        #self.ax1.plot(np.real([self.data_obj.circle_TE,self.data_obj.circle_LE]),np.imag([self.data_obj.circle_TE,self.data_obj.circle_LE]), linewidth=3, color='red')
         self.ax1.set_aspect('equal')
         self.ax1.set_title('Circle Plane')
         self.ax1.set_xlim(-2,2)
@@ -217,6 +218,7 @@ class VMPlot:
 
         # Airfoil Plot
         self.ax2.plot(np.real(self.data_obj.circle_df.airfoil_pts), np.imag(self.data_obj.circle_df.airfoil_pts))
+        #self.ax2.plot(np.real(self.data_obj.scaleAirfoilPts([self.data_obj.airfoil_TE,self.data_obj.airfoil_LE])),np.imag(self.data_obj.scaleAirfoilPts([self.data_obj.airfoil_TE,self.data_obj.airfoil_LE])), linewidth=3, color='red')
         self.ax2.set_aspect('equal')
         self.ax2.set_title('Airfoil Plane')
         self.ax2.set_xlim(-.1,1.1)
