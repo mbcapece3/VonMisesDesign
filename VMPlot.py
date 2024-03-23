@@ -217,7 +217,8 @@ class VMPlot:
         self.ax1.hlines(0,-2,2,color='black')
 
         # Airfoil Plot
-        self.ax2.plot(np.real(self.data_obj.circle_df.airfoil_pts), np.imag(self.data_obj.circle_df.airfoil_pts))
+        self.ax2.plot(np.real(self.data_obj.circle_df.airfoil_pts)/np.real(self.data_obj.circle_df.airfoil_pts[0]), np.imag(self.data_obj.circle_df.airfoil_pts)) # Scaled from 0 to 1
+        #self.ax2.plot(np.real(self.data_obj.circle_df.airfoil_pts), np.imag(self.data_obj.circle_df.airfoil_pts))
         #self.ax2.plot(np.real(self.data_obj.scaleAirfoilPts([self.data_obj.airfoil_TE,self.data_obj.airfoil_LE])),np.imag(self.data_obj.scaleAirfoilPts([self.data_obj.airfoil_TE,self.data_obj.airfoil_LE])), linewidth=3, color='red')
         self.ax2.set_aspect('equal')
         self.ax2.set_title('Airfoil Plane')
@@ -232,7 +233,8 @@ class VMPlot:
         # Distribution Plot
         if self.toggle_state == 'Velocity':
             # Velocity Dist Plot
-            self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
+            self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts)/np.real(self.data_obj.circle_df.airfoil_pts[0]), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf) # Scaled from 0 to 1
+            #self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_vels/self.data_obj.v_inf)
             self.ax3.set_aspect(.5)
             self.ax3.set_title('Velocity Distribution')
             self.ax3.set_xlim(0,1.1)
@@ -245,7 +247,8 @@ class VMPlot:
 
         elif self.toggle_state == 'Pressure':
             # Presure Dist Plot
-            self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_Cp)
+            self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts)/np.real(self.data_obj.circle_df.airfoil_pts[0]), self.data_obj.circle_df.airfoil_Cp) # Scaled from 0 to 1
+            #self.ax3.plot(np.real(self.data_obj.circle_df.airfoil_pts), self.data_obj.circle_df.airfoil_Cp)
             self.ax3.set_aspect(.25)
             self.ax3.set_title('Pressure Distribution')
             self.ax3.set_xlim(0,1.1)
