@@ -29,6 +29,8 @@ To generate an airfoil using VonMisesDesign perform the following steps:
   - Note: When exporting a file, do not include an extension in the filename prompt
 
 ### How To Run
+Download or Clone this repository
+
 To run this program locally, python must be first be installed on your computer. It can be downloaded from here: [Python](https://www.python.org/downloads/)
 
 #### Dependencies
