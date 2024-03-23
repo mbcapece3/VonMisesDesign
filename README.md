@@ -8,6 +8,7 @@ The following code is an interactive airfoil generation tool. It uses conformal 
 ### Usage Instructions
 To generate an airfoil using VonMisesDesign perform the following steps:
 - Run the VonMisesDesign.py file
+  
 - Drag the red dot in the center of the circle to the desired position.
   - With only two poles (represented by black dots), this represents a Joukowsky airfoil
   - For the airfoil to be physically valid, the X coordinate of the circle center must be negative
@@ -19,6 +20,7 @@ To generate an airfoil using VonMisesDesign perform the following steps:
   - Removing a pole will cause all remaining poles to reset their positions
 - Adjust angle of attack using the slider at the bottom
 - Toggle between pressure and velocity distribution display using the buttons on the right
+  
 - To save a file, click Create Save File. The terminal will prompt the user for a filename
   - Note: When saving a file, do not include an extension in the filename prompt
 - To load a file, click Load Save File. The terminal will prompt the user for a filename
@@ -29,6 +31,7 @@ To generate an airfoil using VonMisesDesign perform the following steps:
 ### How To Run
 To run this program locally, python must be first be installed on your computer. It can be downloaded from here: [Python](https://www.python.org/downloads/)
 
+#### Dependencies
 To run this program locally, the following dependencies are required:
 - [matplotlib](https://matplotlib.org/stable/)
   - To install, run "pip install matplotlib" in command prompt
@@ -36,3 +39,18 @@ To run this program locally, the following dependencies are required:
   - To install, run "pip install numpy" in command prompt
 - [pandas](https://pandas.pydata.org/docs/getting_started/index.html)
   - To install, run "pip install pandas" in command prompt
+
+#### Running the Program
+Once all dependencies are installed, you can now run VonMisesDesign
+
+- In command prompt, navigate to the folder containing VonMisesDesign.py
+- Run the program by typing "python VonMisesDesign.py"
+
+OR
+
+- In file explorer, navigate to the folder containing VonMisesDesign.py
+- Run the program by right clicking VonMisesDesign.py and select "Open With" > "Python"
+
+OR
+
+- Run VonMisesDesign.py in the code editor of your choice.
