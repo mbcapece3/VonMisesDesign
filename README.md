@@ -24,3 +24,14 @@ To generate an airfoil using VonMisesDesign perform the following steps:
   - Note: When loading a file, the file extension must be included in the filename
 - To export the airfoil as a set of coordinates, click Export DAT File. The terminal will prompt the user for a filename and an airfoil name
   - Note: When exporting a file, do not include an extension in the filename prompt
+
+### How To Run
+To run this program locally, python must be first be installed on your computer. It can be downloaded from here: [Python](https://www.python.org/downloads/)
+
+To run this program locally, the following dependencies are required:
+- [matplotlib](https://matplotlib.org/stable/)
+  - To install, run "pip install matplotlib" in command prompt
+- [numpy](https://numpy.org/install/)
+  - To install, run "pip install numpy" in command prompt
+- [pandas](https://pandas.pydata.org/docs/getting_started/index.html)
+  - To install, run "pip install pandas" in command prompt
