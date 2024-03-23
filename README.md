@@ -9,8 +9,9 @@ The following code is an interactive airfoil generation tool. It uses conformal 
 To generate an airfoil using VonMisesDesign perform the following steps:
 - Run the VonMisesDesign.py file
 - Drag the red dot in the center of the circle to the desired position.
+  - With only two poles (represented by black dots), this represents a Joukowsky airfoil
   - For the airfoil to be physically valid, the X coordinate of the circle center must be negative
-  - With no additional poles, this represents a Joukowsky airfoil
+  - For the airfoil to be physically valid, all poles must be within the circle
 - For additional control over the geometry, click the Add Pole button
   - Additional poles will appear at (0,0). They can be dragged to a different value as desired
   - Manipulating a single pole will cause other poles to shift to ensure the sum of all poles is (0,0)
